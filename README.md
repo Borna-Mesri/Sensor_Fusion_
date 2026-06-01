@@ -1,46 +1,35 @@
-
 # CSE 145 Sensor Fusion
-
-Unified workspace for the OAK-D Pro + Livox MID-360 sensor fusion pipeline
-running on the NVIDIA Jetson AGX Xavier (ucsd-agx-03).
-
-## Directory layout
-# CSE 145 Sensor_Fusion
 
 **Last Updated:** 04/23/2026  
 **Project Report:** `<insert project report link>`
 
-This document explains how to  SSH into the Jetson,launch camera/LiDAR nodes, use Foxglove, run sensor fusion.
+Unified workspace for the OAK-D Pro + Livox MID-360 sensor fusion pipeline running on the NVIDIA Jetson AGX Xavier (ucsd-agx-03). This document explains how to SSH into the Jetson, launch camera/LiDAR nodes, use Foxglove, and run sensor fusion.
 
 > **Security Note:** This documentation may contain private IP addresses, usernames, and hardware-specific paths. Do not commit passwords, private IPs, or private access details to a public GitHub repository. Replace private values with placeholders such as `<JETSON_IP>` and `<JETSON_PASSWORD>` before publishing.
 
 ---
 
-# Table of Contents
+## Table of Contents
 
 1. [System Overview](#1-system-overview)
-2. [Finding the Jetson IP Address](#4-finding-the-jetson-ip-address)
-3. [SSH Access](#5-ssh-access)
-4. [USB Device Names](#8-usb-device-names)
-5. [Editing Files on the Jetson](#9-editing-files-on-the-jetson)
-6. [ROS 2 Basic Commands](#17-ros-2-basic-commands)
-7. [Docker Basic Commands](#18-docker-basic-commands)
-8. [Camera and LiDAR ROS 2 Nodes](#19-camera-and-lidar-ros-2-nodes)
-19. [Sensor Fusion](#20-sensor-fusion)
-20. [Foxglove Visualization](#21-foxglove-visualization)
+2. [Finding the Jetson IP Address](#2-finding-the-jetson-ip-address)
+3. [SSH Access](#3-ssh-access)
+4. [USB Device Names](#4-usb-device-names)
+5. [Launching Containers Individually](#5-launching-containers-individually)
+6. [Sensor Fusion](#6-sensor-fusion)
+7. [Foxglove Visualization](#7-foxglove-visualization)
 
 ---
 
-# 1. System Overview
+## 1. System Overview
 
 The car stack currently uses:
 
-- **Jetson AGX Xavior** as the main onboard computer
-- **OAK D Pro Wide Camera** for image data
-- **Livox LiDAR** for point cloud data
-- **ROS 2** for sensor topics and bridge workflows
-- **Foxglove** for live visualization
-
+* **Jetson AGX Xavier** as the main onboard computer
+* **OAK-D Pro Wide Camera** for image data
+* **Livox MID-360 LiDAR** for point cloud data
+* **ROS 2** for sensor topics and bridge workflows
+* **Foxglove** for live visualization
 
 Sensor fusion project folder:
 
@@ -48,17 +37,19 @@ Sensor fusion project folder:
 /home/jetson/sensorfusion_ws
 ```
 
-# 2. Finding the Jetson IP Address
+---
 
-## Current Known Jetson IP
+## 2. Finding the Jetson IP Address
 
-```bash
+### Current Known Jetson IP
+
+```text
 192.168.139.178
 ```
 
-This IP may change depending on the network or hotspot.
+*This IP may change depending on the network or hotspot.*
 
-## If You Are Physically on the Jetson
+### If You Are Physically on the Jetson
 
 Run:
 
@@ -79,9 +70,10 @@ Example:
 ```text
 inet 192.168.139.178/24
 ```
+
 ---
 
-# 3. SSH Access
+## 3. SSH Access
 
 From your personal computer:
 
@@ -101,27 +93,15 @@ If using X forwarding:
 ssh -X jetson@<JETSON_IP>
 ```
 
-Example:
-
-```bash
-ssh -X jetson@192.168.139.178
-```
-
 If you do not need X forwarding, use:
 
 ```bash
 ssh -x jetson@<JETSON_IP>
 ```
 
-Example:
-
-```bash
-ssh -x jetson@192.168.139.178
-```
-
 ---
 
-# 4. USB Device Names
+## 4. USB Device Names
 
 List all connected USB serial devices:
 
@@ -131,92 +111,54 @@ ls /dev/ttyACM*
 
 Expected devices may include:
 
-```bash
+```text
 /dev/ttyACM0
 /dev/ttyACM1
 /dev/ttyACM2
 /dev/ttyACM3
 ```
 
-If devices are not detected, power cycle the cables by unplugging and replugging them.
-
-USB names can change if ports are swapped. If the car stops working after moving USB cables, check the detected devices again:
-
-```bash
-ls /dev/ttyACM*
-```
-
-# 5. Editing Files on the Jetson
-
-Use `nano` for simple terminal editing:
-
-```bash
-nano <filename>
-```
-
-# 6. ROS 2 Basic Commands
-
-List all visible ROS 2 topics:
-
-```bash
-ros2 topic list
-```
-
-Echo a topic:
-
-```bash
-ros2 topic echo <topic_name>
-```
-
-Examples:
-
-```bash
-ros2 topic echo /oak/rgb/image_raw
-```
-
-```bash
-ros2 topic echo /livox/lidar
-```
-
-If nothing appears, then the topic is not publishing or the current shell/container cannot see it.
+If devices are not detected, power cycle the cables by unplugging and replugging them. USB names can change if ports are swapped. If the car stops working after moving USB cables, check the detected devices again.
 
 ---
 
-# 7. Docker Basic Commands
+## 5. Launching Containers Individually
 
-See running containers:
+Use these commands when you only need one sensor or want to debug a specific container. 
 
-```bash
-docker ps
-```
-
-See available Docker images:
+### Camera Only
 
 ```bash
-docker images
+cd ~/sensorfusion_ws/camera
+bash launch_camera_host.sh
 ```
+*(Alternatively, use the shared script: `bash ~/sensorfusion_ws/shared/launch_camera.sh`)*
 
-Stop a container:
+* **Publishes:** `/oak/rgb/image_raw` at 640x400 @ 30 FPS (USB 3) or ~6-7 Hz (USB 2).
+
+### LiDAR Only
 
 ```bash
-docker stop <container_name>
+cd ~/sensorfusion_ws/lidar
+bash launch_lidar_foxy_host.sh 99
 ```
+*(Alternatively, use the shared script: `bash ~/sensorfusion_ws/shared/launch_lidar.sh 99`)*
 
-Enter a running container:
+* **Publishes:** `/livox/lidar` at 10 Hz.
+
+### Fusion Container Only (Manual)
 
 ```bash
-docker exec -it <container_name> /bin/bash
+cd ~/sensorfusion_ws/fusion/docker
+bash run.sh
 ```
+*(Alternatively, use the shared script: `bash ~/sensorfusion_ws/shared/launch_fusion.sh`)*
 
-Example:
-
-```bash
-docker exec -it ros2_camera_lidar_fusion /bin/bash
-```
+* This drops you into the container interactively. 
 
 ---
 
-# 9. Sensor Fusion
+## 6. Sensor Fusion
 
 The sensor fusion project is located at:
 
@@ -230,35 +172,28 @@ The Docker directory is:
 ~/sensorfusion_ws/shared/docker
 ```
 
----
-## 9.10 Start all containers
+### 6.1 Start All Containers (Recommended)
 
+To run the full pipeline, start all containers together:
 
 ```bash
 bash ~/sensorfusion_ws/shared/start_all.sh 99
 ```
-------
-Note: Replace 99 with the last two digits of your Livox MID-360 serial number if different.
 
-You should see:
+> **Note:** Replace `99` with the last two digits of your Livox MID-360 serial number if different.
 
-```text
-• === 1/3 — Camera === waits for /oak/rgb/image_raw
-• === 2/3 — LiDAR === waits for /livox/lidar
-• === 3/3 — Fusion === starts fusion container in background
-```
+You should see output indicating:
+* Starts camera container -> waits for `/oak/rgb/image_raw`
+* Starts LiDAR container -> waits for `/livox/lidar`
+* Starts fusion container in background
 
-## 9.20 Enter the Sensor Fusion Container Manually
+### 6.2 Enter the Sensor Fusion Container Manually
 
 ```bash
 docker exec -it ros2_camera_lidar_fusion /bin/bash
 ```
 
----
-
-
-
-## 9.3 Check ROS Topics Inside the Container
+### 6.3 Check ROS Topics Inside the Container
 
 Inside the container:
 
@@ -273,68 +208,50 @@ You should see:
 /oak/rgb/image_raw
 ```
 
-Echo LiDAR:
+Echo LiDAR (This will show the raw data stream of the LiDAR):
 
 ```bash
 ros2 topic echo /livox/lidar
 ```
 
-
-```bash
-This will show raw data stream of Lidar
-```
-
-
-Echo camera:
+Echo camera (This will show the raw data stream of the OAK-D Camera):
 
 ```bash
 ros2 topic echo /oak/rgb/image_raw
 ```
 
-
-```bash
-This will show raw data stream of Oak D Camera
-
-```
----
-
-## 9.4 Build and Launch Sensor Fusion
+### 6.4 Build and Launch Sensor Fusion
 
 Inside the container:
 
 ```bash
-bash cd /ros2_ws
+cd /ros2_ws
 ```
 
-Show available launch options:
+Build and source the workspace (once per container session):
+
+```bash
+bash start.sh
+```
+
+To see available launch options, run:
 
 ```bash
 bash launch.sh
 ```
 
-Build and source the workspace:
+### 6.5 Manual Camera Calibration (Optional) 
 
-```bash
-start.sh
-```
----
-
-## 9.5 Manual Camera Calibration(Optional) 
-
-Leave Camera with factory calibration (Recommended) or follow the below steps for manual calibration.
-
-Inside the sensor fusion container:
+Leave the camera with factory calibration (Recommended) or follow the steps below for manual calibration. Inside the sensor fusion container:
 
 ```bash
 cd /ros2_ws
 bash launch.sh 1
 ```
 
-////////////Use a 10 x 8 inch checker board and begin calibraiton.
+Use a 10 x 8 inch checkerboard and begin calibration. After calibration, values are saved on the Jetson under:
 
-After calibration, values are saved on the Jetson under:
-
-```cd
+```bash
 ~/sensorfusion_ws/fusion/config
 ```
 
@@ -344,52 +261,40 @@ Important calibration files:
 camera_extrinsic_calibration.yaml
 camera_intrinsic_calibration.yaml
 ```
----
 
-## 9.6 Factory Calibratinon(Recommended):
+### 6.6 Factory Calibration (Recommended)
 
-Camera comes Factory calibrated. 
+The camera comes factory calibrated. If necessary to revert back to factory calibration, the values are stored in the camera. Make sure to edit the YAML file to match factory calibration values and run a factory reset script. Files are located in:
 
-If neccessry to revert back to factory calibration, factory calibration values are stored in the Camera.
-
-Make to edit yaml file to match factory calibration values and run a factory reset script.
-
-File located in 
-
-```text
+```bash
 ~/sensorfusion_ws/fusion/config
 ```
----
 
-## 9.7 Synchronized data
+### 6.7 Synchronized Data
 
-Extract synchronized data from both Lidar and Camera 
+Extract synchronized data from both LiDAR and Camera:
 
 ```bash
 cd /ros2_ws
 bash launch.sh 2
 ```
 
-Lidar point cloud data and Camera image at synchronized time will be saved in 
+LiDAR point cloud data and camera images at synchronized times will be saved in:
 
-```cd
-sensorfusin_ws/fusion/data
+```bash
+~/sensorfusion_ws/fusion/data
 ```
-------
 
-
-## 9.8 LiDAR Calibration (Match points) 
+### 6.8 LiDAR Calibration (Match Points) 
 
 Inside the sensor fusion container:
 
 ```bash
 cd /ros2_ws
 bash launch.sh 3
-
-*You will be prompted to match points for both Camera and Lidar
-*Make sure to match points in correct order.
 ```
 
+> *You will be prompted to match points for both the camera and LiDAR. Make sure to match points in the correct order.*
 
 After LiDAR calibration, check that the fused output topic exists:
 
@@ -409,41 +314,47 @@ Echo the fused output:
 ros2 topic echo /sensorfusion_out
 ```
 
----
+### 6.9 Compute LiDAR & Camera Calibration 
 
-## 9.9 Compute Lidar & Camera Calibration 
-
-In order for the 3d point cloud to be projected on a 2d image a matrix transformation needs to be done. The below command will run a python script to perform this computation.
+In order for the 3D point cloud to be projected on a 2D image, a matrix transformation needs to be done. The below command will run a Python script to perform this computation:
 
 ```bash
 bash launch.sh 4
 ```
 
+> **IMPORTANT: FOXGLOVE VISUALIZATION MUST BE SETUP AND STARTED FIRST FOR THE FOLLOWING COMMANDS.**
 
-# FOX GLOVE VISULATION MUST BE SETUP FIRST AND STARTED FOR THE FOLLOWING COMMANDS
+### 6.10 Projection of LiDAR Point Cloud on Video Stream
 
-
-## 10.0 Projection of Lidar Point Cloud on Video Stream (Sensor Fusion)
-
+Projects LiDAR point cloud onto the camera image:
 
 ```bash
 bash launch.sh 5
 ```
 
-## 10.1 Sensor Fusion w/ Yolo detection
+### 6.11 Sensor Fusion w/ YOLO Detection
+
+Runs LiDAR projection plus YOLOv8 object detection and HSV-based cone detection:
 
 ```bash
 bash launch.sh 6
 ```
 
-## 10.2 Sensor Fusion w/ Yolo detection in 2 meter radius 
+### 6.12 Sensor Fusion w/ YOLO Detection in 2-Meter Radius 
 
-# 11. Foxglove Visualization
+Extends detection with physical measurements and surface classification for objects within 2 meters:
+
+```bash
+bash launch.sh 7
+```
+
+---
+
+## 7. Foxglove Visualization
 
 Foxglove is used instead of RViz for live ROS visualization.
 
-General workflow:
-
+**General workflow:**
 1. Start the camera node.
 2. Start the LiDAR node.
 3. Start the sensor fusion Docker container if needed.
@@ -451,34 +362,25 @@ General workflow:
 5. Open Foxglove in a browser.
 6. Connect to the Jetson WebSocket.
 
----
+### 7.1 Launch Foxglove Bridge
 
-## 11.1 Launch Foxglove Bridge
-
-Open a new termianl:
+Open a new terminal on the Jetson host:
 
 ```bash
-  source /opt/ros/galactic/setup.bash
-```
-
-```bash
-  export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
-```
-
-```bash
-
+source /opt/ros/galactic/setup.bash
+export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 ros2 run foxglove_bridge foxglove_bridge --ros-args -p port:=8765
-
 ```
-## 11.3 Connect Through Foxglove
 
-Open a Chromium-based browser and go to:
+### 7.2 Connect Through Foxglove
+
+Open a Chromium-based browser (Chrome, Edge, or Arc) on your personal computer and go to:
 
 ```text
-https://app.foxglove.dev
+[https://app.foxglove.dev](https://app.foxglove.dev)
 ```
 
-Open a Connection using:
+Click **Open Connection** -> **Foxglove WebSocket**, and connect using:
 
 ```text
 ws://<JETSON_IP>:8765
@@ -490,44 +392,41 @@ Example:
 ws://192.168.139.178:8765
 ```
 
-Foxglove will show point cloud data and video stream simulatenously.
+Foxglove will show point cloud data and the video stream simultaneously. To view the sensor fusion output, change the Topic of the image panel to `/sensorfusion_out` or `/sensorfusion_out2`.
 
-To view sensor fusion change Topic od image panel to Sensor_out.
+### 7.3 Full Camera, LiDAR, Sensor Fusion, and Foxglove Workflow 
 
+*(Assuming all calibration is complete)*
 
----
-
-## 11.6 Full Camera, LiDAR, Sensor Fusion, and Foxglove Workflow (After all calibraiton is done)
-
-### Terminal 1: Camera.Lidar, docker
-
+**Terminal 1: Start All Containers**
 ```bash
 bash ~/sensorfusion_ws/shared/start_all.sh 99
 ```
 
-### Terminal 3: Sensor Fusion Docker & Foxglove
-
+**Terminal 2: Foxglove Bridge (Jetson Host)**
 ```bash
-docker exec -it <container_name> /bin/bash
+source /opt/ros/galactic/setup.bash
+export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+ros2 run foxglove_bridge foxglove_bridge --ros-args -p port:=8765
 ```
 
+**Terminal 3: Sensor Fusion Docker**
 ```bash
-ros2 launch foxglove_bridge foxglove_bridge_launch.xml
+docker exec -it ros2_camera_lidar_fusion /bin/bash
+cd /ros2_ws
+bash start.sh
 ```
 
-Then run one of the followingcommands:
-
+Then run one of the following fusion modes:
 ```bash
 bash launch.sh 5
+# OR
 bash launch.sh 6
+# OR
 bash launch.sh 7
 ```
 
-Then open Foxglove w/Chrome and connect to:
-
+Finally, open Foxglove in Chrome on your Mac/PC and connect to:
 ```text
 ws://<JETSON_IP>:8765
 ```
----
-
->>>>>>> d3696a25c68125002223678754ad4a97a7df4113
