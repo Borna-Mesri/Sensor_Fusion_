@@ -44,7 +44,7 @@ Sensor fusion project folder:
 ### Current Known Jetson IP
 
 ```text
-192.168.139.178
+192.168.***.***
 ```
 
 *This IP may change depending on the network or hotspot.*
@@ -68,7 +68,7 @@ Look for the `inet` field. The IP address is the first number string after `inet
 Example:
 
 ```text
-inet 192.168.139.178/24
+inet 192.168.***.***/24
 ```
 
 ---
@@ -84,7 +84,7 @@ ssh jetson@<JETSON_IP>
 Example:
 
 ```bash
-ssh jetson@192.168.139.178
+ssh jetson@192.168.***.***
 ```
 
 If using X forwarding:
