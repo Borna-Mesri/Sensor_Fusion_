@@ -431,7 +431,7 @@ Finally, open Foxglove in Chrome on your Mac/PC and connect to:
 ws://<JETSON_IP>:8765
 ```
 
-## 7.EDIT: RViz Visualization (Recommended)
+## 8.EDIT: RViz Visualization (Recommended)
 
 Rviz tends to havea higher FPS then Foxglove.
 Run the following Commands in a new terminal.
