@@ -322,7 +322,7 @@ In order for the 3D point cloud to be projected on a 2D image, a matrix transfor
 bash launch.sh 4
 ```
 
-> **IMPORTANT: FOXGLOVE VISUALIZATION MUST BE SETUP AND STARTED FIRST FOR THE FOLLOWING COMMANDS.**
+> **IMPORTANT: FOXGLOVE OR RVIZ VISUALIZATION MUST BE SETUP AND STARTED FIRST BEFORE THE FOLLOWING COMMANDS.**
 
 ### 6.10 Projection of LiDAR Point Cloud on Video Stream
 
@@ -352,7 +352,7 @@ bash launch.sh 7
 
 ## 7. Foxglove Visualization
 
-Foxglove is used instead of RViz for live ROS visualization.
+Foxglove can be used instead of RViz for live ROS visualization.
 
 **General workflow:**
 1. Start the camera node.
@@ -430,3 +430,17 @@ Finally, open Foxglove in Chrome on your Mac/PC and connect to:
 ```text
 ws://<JETSON_IP>:8765
 ```
+
+## 7.EDIT: RViz Visualization (Recommended)
+
+Rviz tends to havea higher FPS then Foxglove.
+Run the following Commands in a new terminal.
+
+```text
+source /opt/ros/foxy/setup.bash
+export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+rviz2
+```
+
+Note: Do not have Rviz and Foxglove on at the same time
+
